@@ -1,0 +1,68 @@
+# Static PV+PVC for Bazarr config — backed by local configs/ on the host.
+# Changes made through the Bazarr UI are written directly to ~/development/bazarr/configs/
+# and persist across cluster resets with no backup/restore steps.
+# IMPORTANT: this path must be listed under extraMounts in ~/development/kubernetes/kind-config.yaml.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: bazarr-config
+spec:
+  capacity:
+    storage: 2Gi
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: ""
+  hostPath:
+    path: /home/tostinat/development/bazarr/configs
+  claimRef:
+    name: bazarr-config
+    namespace: bazarr
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: bazarr-config
+  namespace: bazarr
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+  storageClassName: ""
+  volumeName: bazarr-config
+---
+# Static PV backed by the mergerfs media pool (seagate 2TB + external 1TB).
+# Mounts at /data so Bazarr sees the exact same relative paths Sonarr, Radarr,
+# and Jellyfin report for the same files — required for subtitle path matching.
+# IMPORTANT: kind nodes are Docker containers and cannot see host paths by default.
+# The path below requires the corresponding extraMount in ~/development/kubernetes/kind-config.yaml.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: bazarr-data
+spec:
+  capacity:
+    storage: 3Ti
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: ""
+  hostPath:
+    path: /mnt/media_pool
+  claimRef:
+    name: bazarr-data
+    namespace: bazarr
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: bazarr-data
+  namespace: bazarr
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 3Ti
+  storageClassName: ""
+  volumeName: bazarr-data
